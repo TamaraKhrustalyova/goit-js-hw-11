@@ -11,9 +11,27 @@
     color: #212121;
     line-height: 1.5;
   }
+
+  .search-form {
+    display: flex;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    background-color: #a89de8;
+    height: 45px;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .submit-btn{
+    border-radius: 3;
+    border: none;
+    
+  }
   
   img {
     display: block;
     max-width: 100%;
   }
+
+  
   
