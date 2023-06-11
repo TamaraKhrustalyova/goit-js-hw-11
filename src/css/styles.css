@@ -33,5 +33,27 @@
     max-width: 100%;
   }
 
+  .gallery {
+    margin-top: 10px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
   
-  
+  .image-card {
+    width: 30%;
+    text-align: center;
+    border-radius: 0px;
+    background-color: #f2f2fa;
+    padding: 0px;
+    box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, 0.3);
+  }
+
+  .card-info{
+    display: flex;
+    gap: 10px;
+    font-size: 14px;
+    padding: 5px;
+  }
