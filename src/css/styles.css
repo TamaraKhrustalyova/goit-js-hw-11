@@ -14,12 +14,14 @@
 
   .search-form {
     display: flex;
+    position: fixed;
+    overflow: hidden;
+    top: 0;
     width: 100%;
-    /* position: fixed; */
+    height: 45px;
     padding-top: 10px;
     padding-bottom: 10px;
     background-color: #a89de8;
-    height: 45px;
     justify-content: center;
     gap: 10px;
   }
@@ -49,7 +51,8 @@
   }
 
   .gallery {
-    margin-top: 10px;
+    
+    margin-top: 55px;
     display: flex;
     align-items: flex-start;
     justify-content: center;
