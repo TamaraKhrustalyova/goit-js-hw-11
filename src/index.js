@@ -1,5 +1,4 @@
 import Notiflix from 'notiflix';
-import axios from 'axios';
 import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
 
@@ -15,35 +14,72 @@ const refs = {
 const imagesAPIService = new ImagesAPIService();
 
 refs.form.addEventListener('submit', onQuerySubmit);
-refs.loadMoreBtn.addEventListener('submit', onQuerySubmit);
+refs.loadMoreBtn.addEventListener('click', fetchImgs);
+
+async function fetchImgs(){
+    try {
+        const markup = await generateImageMarkup();
+        if(markup === undefined) throw new Error;
+        
+        updateQueryList(markup); 
+        
+    } catch(err) {
+        onError(err);
+    }
+
+    // return generateImageMarkup()
+    // .then((markup) => updateQueryList(markup))
+}
 
 function onQuerySubmit(e){
     e.preventDefault()
     let searchedItem = refs.inputEl.value.trim();
-    // console.log(searchedItem)
+    
         if(searchedItem === "") {
 
-            updateQueryList('');
+            clearImgList();
             Notiflix.Notify.warning('Please enter valid data to start the search.');
             refs.loadMoreBtn.classList.add('is-hidden');
+
             return;
         }
         
+        clearImgList();
+        imagesAPIService.resetPage();
         imagesAPIService.setSearchValue(searchedItem);
 
-        imagesAPIService.fetchQuery()
-        .then(({hits, totalHits}) => {
-
-        if(hits.length === 0) throw new Error(Notiflix.Notify.failure('Sorry, there are no images matching your search query. Please try again.'))
-            
-            Notiflix.Notify.info(`Hooray! We found ${totalHits} images.`)
-            return hits.reduce((markup, imageCard) =>
-            markup + createItemMarkup(imageCard), '')
-        })
-        .then((markup) => updateQueryList(markup))
+        fetchImgs()
         .catch(onError)
         .finally(() => refs.form.reset())
 }       
+
+async function generateImageMarkup(){
+
+    const {hits, totalHits} = await imagesAPIService.fetchQuery();
+        try {
+            if (hits.length === 0) 
+                throw new Error(Notiflix.Notify.failure('Sorry, there are no images matching your search query. Please try again.'));
+                
+                Notiflix.Notify.info(`Hooray! We found ${totalHits} images.`)
+                return hits.reduce((markup, imageCard) =>
+                markup + createItemMarkup(imageCard), '')
+
+        } catch(err) {
+            onError(err);
+        }
+                
+
+    // return imagesAPIService.fetchQuery()
+    // .then(({hits, totalHits}) => {
+
+    //     if (hits.length === 0) 
+    //         throw new Error(Notiflix.Notify.failure('Sorry, there are no images matching your search query. Please try again.'));
+        
+    //     Notiflix.Notify.info(`Hooray! We found ${totalHits} images.`)
+    //     return hits.reduce((markup, imageCard) =>
+    //     markup + createItemMarkup(imageCard), '')        
+    // })
+}
 
 const lightbox = new SimpleLightbox('.gallery a', {captionsData: 'alt'});
 lightbox.refresh();
@@ -63,8 +99,12 @@ function createItemMarkup({webformatURL, largeImageURL, tags, likes, views, comm
 }
 
 function updateQueryList(markup){
-    refs.gallery.innerHTML = markup
+    refs.gallery.insertAdjacentHTML('beforeend', markup)
     refs.loadMoreBtn.classList.remove('is-hidden')
+}
+
+function clearImgList(){
+    refs.gallery.innerHTML = '';
 }
 
 function onError(error){
