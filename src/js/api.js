@@ -7,16 +7,12 @@ export default class ImagesAPIService {
     constructor() {
         this.page = 1;
         this.searchValue = "";
+        this.perPage = 40;
     }
 
     async fetchQuery() {
-        const url = `${BASE_URL}?key=${API_KEY}&image_type=photo&orientation=horizontal&safesearch=true&page=${this.page}&per_page=40&q=${this.searchValue}`
-        // return fetch(url)
-        // .then(res => res.json())
-        // .then((data) => {
-        //     
-        //     return data;
-        // });
+        const url = `${BASE_URL}?key=${API_KEY}&image_type=photo&orientation=horizontal&safesearch=true&page=${this.page}&per_page=${this.perPage}&q=${this.searchValue}`
+
         const res = await axios.get(url)
             this.incrementPage();
             return res.data;

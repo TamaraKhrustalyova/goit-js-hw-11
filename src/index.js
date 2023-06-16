@@ -1,8 +1,13 @@
 import Notiflix from 'notiflix';
 import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
+import { throttle } from 'lodash';
 
 import ImagesAPIService from "./js/api.js";
+
+const imagesAPIService = new ImagesAPIService();
+const lightbox = new SimpleLightbox('.gallery a', {captionsData: 'alt'});
+const scroll = throttle(handleScroll, 500)
 
 const refs = {
     form: document.querySelector('.search-form'),
@@ -11,78 +16,62 @@ const refs = {
     loadMoreBtn: document.querySelector('.load-more'),
 }
 
-const imagesAPIService = new ImagesAPIService();
-
 refs.form.addEventListener('submit', onQuerySubmit);
-refs.loadMoreBtn.addEventListener('click', fetchImgs);
-
-async function fetchImgs(){
-    try {
-        const markup = await generateImageMarkup();
-        if(markup === undefined) throw new Error;
-        
-        updateQueryList(markup); 
-        
-    } catch(err) {
-        onError(err);
-    }
-
-    // return generateImageMarkup()
-    // .then((markup) => updateQueryList(markup))
-}
+refs.loadMoreBtn.addEventListener('click', onLoadMore);
 
 function onQuerySubmit(e){
     e.preventDefault()
+    window.addEventListener("scroll", scroll);
     let searchedItem = refs.inputEl.value.trim();
-    
+   
         if(searchedItem === "") {
-
             clearImgList();
             Notiflix.Notify.warning('Please enter valid data to start the search.');
-            refs.loadMoreBtn.classList.add('is-hidden');
-
             return;
         }
-        
         clearImgList();
         imagesAPIService.resetPage();
         imagesAPIService.setSearchValue(searchedItem);
 
-        fetchImgs()
-        .catch(onError)
-        .finally(() => refs.form.reset())
-}       
+        onLoadMore()
+}     
 
-async function generateImageMarkup(){
-
-    const {hits, totalHits} = await imagesAPIService.fetchQuery();
-        try {
-            if (hits.length === 0) 
-                throw new Error(Notiflix.Notify.failure('Sorry, there are no images matching your search query. Please try again.'));
-                
-                Notiflix.Notify.info(`Hooray! We found ${totalHits} images.`)
-                return hits.reduce((markup, imageCard) =>
-                markup + createItemMarkup(imageCard), '')
-
-        } catch(err) {
-            onError(err);
-        }
-                
-
-    // return imagesAPIService.fetchQuery()
-    // .then(({hits, totalHits}) => {
-
-    //     if (hits.length === 0) 
-    //         throw new Error(Notiflix.Notify.failure('Sorry, there are no images matching your search query. Please try again.'));
+async function onLoadMore(){
+    try {
+        const markup = await generateImageMarkup();
+        if(markup === undefined) throw new Error;
         
-    //     Notiflix.Notify.info(`Hooray! We found ${totalHits} images.`)
-    //     return hits.reduce((markup, imageCard) =>
-    //     markup + createItemMarkup(imageCard), '')        
-    // })
+       updateQueryList(markup); 
+
+    } catch(err) {
+        onError(err);
+    }
 }
 
-const lightbox = new SimpleLightbox('.gallery a', {captionsData: 'alt'});
-lightbox.refresh();
+async function generateImageMarkup(){
+     try {
+         const {hits, totalHits} = await imagesAPIService.fetchQuery();
+         const lastPage = Math.ceil(totalHits / imagesAPIService.perPage);
+         const newPage = imagesAPIService.page;
+
+        if (totalHits > 0 && newPage === 2) {
+            Notiflix.Notify.info(`Hooray! We found ${totalHits} images.`);     
+        }
+         
+        if(newPage > lastPage && totalHits > 0) {
+            Notiflix.Notify.warning(`'We're sorry, but you've reached the end of search results'`);
+            window.removeEventListener("scroll", scroll);
+        }
+       
+        if (hits.length === 0) 
+            throw new Error(Notiflix.Notify.failure('Sorry, there are no images matching your search query. Please try again.'));
+        
+        return hits.reduce((markup, imageCard) => markup + createItemMarkup(imageCard), '')
+
+    } catch(err) {
+        onError(err);
+    }
+}
 
 function createItemMarkup({webformatURL, largeImageURL, tags, likes, views, comments, downloads}){
     return `
@@ -99,15 +88,23 @@ function createItemMarkup({webformatURL, largeImageURL, tags, likes, views, comm
 }
 
 function updateQueryList(markup){
-    refs.gallery.insertAdjacentHTML('beforeend', markup)
-    refs.loadMoreBtn.classList.remove('is-hidden')
+    refs.gallery.insertAdjacentHTML('beforeend', markup);
+    lightbox.refresh();
 }
 
 function clearImgList(){
     refs.gallery.innerHTML = '';
 }
 
-function onError(error){
-    updateQueryList(`${error.message}`)
-    refs.loadMoreBtn.classList.add('is-hidden')
+function onError(){ 
+    clearImgList()
+}
+
+window.addEventListener("scroll", handleScroll);
+
+function handleScroll() {
+  const { clientHeight, scrollTop, scrollHeight } = document.documentElement;
+  if (scrollTop + clientHeight >= scrollHeight - 5) {
+    onLoadMore();
+  }
 }
